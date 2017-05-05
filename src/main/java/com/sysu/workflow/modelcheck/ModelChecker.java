@@ -91,6 +91,21 @@ public class ModelChecker {
             //还是要区分转移的类型:yes or no is a problem
             promelaDoGuard.append("::(");
             for (StateNode node : tempNodes) {
+
+                if(node.isParallel() || node.isComposite()){
+                    promelaDoGuard.append("cangoout[" + node.getNumber() + "] &&");
+                }
+
+                if(t.event!=null && t.event.equals("done.state."+node.getName())) {
+
+                    if(node.isComposite()){
+                        promelaDoGuard.append("complexFinish==1 &&");
+                    }else if(node.isParallel()){
+                        promelaDoGuard.append("parallelFinish==1 &&");
+                    }else{
+                        //nothing
+                    }
+                }
                 promelaDoGuard.append("isactive[" + node.getNumber() + "] &&");
             }
             promelaDoGuard.delete(promelaDoGuard.lastIndexOf("&&"), promelaDoGuard.length());
@@ -99,6 +114,24 @@ public class ModelChecker {
                     "statetochange=true;" +
                     "list[i]=" + counter + ";" +
                     "i++;");
+            //添加cangoout=false,添加parallelFinish,和complexFinish
+            if(getLCAncestor(t).isComposite() || getLCAncestor(t).isParallel()){
+                promelaDoGuard.append("cangoout["+getLCAncestor(t).getNumber()+"]=false;");
+            }
+            //表示复合状态的结束节点
+            if(t.getTarget().getTransitions().size() ==0){
+                if(getLCAncestor(t).getParent()!= null) {
+                    if (getLCAncestor(t).getParent().isParallel()) {
+                        promelaDoGuard.append("parallelFinish_" + getLCAncestor(t).getParent().getNumber() + "++;");
+                        promelaDoGuard.append("complexFinish_" + getLCAncestor(t).getNumber() + "++;");
+
+                    } else {
+                        promelaDoGuard.append("complexFinish_" + getLCAncestor(t).getNumber() + "++;");
+
+                    }
+                }
+            }
+            //
             for (StateNode exitState : exitStates) {
                 promelaDoGuard.append("isactive[" + exitState.getNumber() + "]=false;");
             }
@@ -275,7 +308,19 @@ public class ModelChecker {
         variables.append("int transNumber=" + tree.getTransitionNumber() + ";");
         variables.append("bool cangoout[" + tree.getStateNumber() + "]=true;");
         variables.append("int i=1;");
-        //TODO ：此处还应该根据并发状态的数量来搞一个并发计数器；
+        //TODO ：此处还应该根据并发状态，和复合状态的数量来搞一个并发计数器
+        List<StateNode> parallelStates = tree.findParallelState();
+        List<StateNode> complexStates =tree.findComplexState();
+
+
+        for(StateNode stateNode: parallelStates){
+            variables.append("int parallelFinish_"+stateNode.getNumber()+"=0");
+        }
+        for(StateNode stateNode: complexStates){
+            variables.append("int complexFinish_"+stateNode.getNumber()+"=0");
+        }
+
+
         return variables;
     }
 

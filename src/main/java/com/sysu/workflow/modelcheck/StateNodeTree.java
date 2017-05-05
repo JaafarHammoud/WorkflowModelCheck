@@ -138,4 +138,39 @@ public class StateNodeTree {
         else
             return false;
     }
+    public List<StateNode> findParallelState(){
+
+        List<StateNode> parallelStates = new ArrayList<StateNode>();
+
+        Queue<StateNode> queue = new LinkedList<StateNode>();
+        queue.add(root);
+        while (!queue.isEmpty()){
+            StateNode temp = queue.poll();
+            if (temp.isParallel()){
+                parallelStates.add(temp);
+            }
+            for(StateNode node : temp.getChildren()){
+                queue.add(node);
+            }
+        }
+
+
+        return parallelStates;
+    }
+    public List<StateNode> findComplexState(){
+        List<StateNode> complexStates = new ArrayList<StateNode>();
+
+        Queue<StateNode> queue = new LinkedList<StateNode>();
+        queue.add(root);
+        while (!queue.isEmpty()){
+            StateNode temp = queue.poll();
+            if (temp.isComposite()){
+                complexStates.add(temp);
+            }
+            for(StateNode node : temp.getChildren()){
+                queue.add(node);
+            }
+        }
+        return complexStates;
+    }
 }
